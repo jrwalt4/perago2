@@ -1,31 +1,30 @@
 /**
  * Timecard component
  */
-import { List, ListItem } from '@mui/material';
+import Box from "@mui/material/Box";
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem'
+import ListItemText from "@mui/material/ListItemText";
+import Paper from "@mui/material/Paper";
 import Typography from '@mui/material/Typography';
 
-import { useGetPunchesQuery } from 'store/api';
-
-const Punchlist: React.FunctionComponent = () => {
-    const { data: punches, error } = useGetPunchesQuery();
-    if(punches) {
-        return (
-            <List>
-                {punches.map(p => <ListItem key={p.id}>{p.taskId}</ListItem>)}
-            </List>
-        );
-    }
-    if(error) {
-        return <b>Error</b>;
-    }
-    return <i>Loading...</i>
-};
+import Sidebar from 'components/Sidebar';
+import Titlebar from 'components/Titlebar';
+import MainContent from 'components/MainContent'
+import Punchlist from './Punchlist';
 
 export default function Timecard() {
     return (
-        <>
-            <Typography variant="h1">Hello!</Typography>
-            <Punchlist />
-        </>
+        <Box sx={{display: 'flex'}}>
+            <Titlebar />
+            <Sidebar><List><ListItem><ListItemText>This is a sidebar</ListItemText></ListItem></List></Sidebar>
+            <MainContent>
+                <Paper sx={{p:2}} elevation={0}>
+                    <Typography variant="body1">Hello again</Typography>
+                    <Punchlist />
+                </Paper>
+            </MainContent>
+            <Sidebar anchor="right"><Typography variant="body2" sx={{p:2}}>These are details</Typography></Sidebar>
+        </Box>
     );
 }

@@ -16,11 +16,20 @@ async function wrapReturnValue<TR>(p: Promise<TR>) {
 }
 
 type PgTagTypes = "Tasks" | "Punches" | "Projects";
-type PgBaseQuery = BaseQueryFn<string | Partial<Entity>, Entity, Error>;
+type PgBaseQuery = BaseQueryFn<string | Partial<Entity>, unknown, Error>;
+type PgEndpointDefinition<TResult, TArg=void, TTag extends string=PgTagTypes> =
+    QueryDefinition<
+        TArg,
+        PgBaseQuery,
+        TTag,
+        TResult extends Array<infer U> ?
+            U extends Entity ? StoreEntity<U>[] : never :
+            NonNullable<TResult> extends Entity ? StoreEntity<NonNullable<TResult>> | Extract<TResult, undefined> : never
+    >;
 type PgEndpoints = {
-    getTasks: QueryDefinition<void, PgBaseQuery, PgTagTypes, StoreEntity<Task>[]>,
-    getPunches: QueryDefinition<void, PgBaseQuery, PgTagTypes, StoreEntity<Punch>[]>,
-    getPunchById: QueryDefinition<EntityId, PgBaseQuery, PgTagTypes, StoreEntity<Punch> | undefined>
+    getTasks: PgEndpointDefinition<Task[]>,
+    getPunches: PgEndpointDefinition<Punch[]>,
+    getPunchById: PgEndpointDefinition<Punch | undefined, EntityId>
 }
 
 export const pgApi = createApi<PgBaseQuery, PgEndpoints, 'perago', PgTagTypes>({
