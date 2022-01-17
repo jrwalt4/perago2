@@ -1,7 +1,7 @@
 import { BaseQueryFn, createApi, QueryDefinition } from "@reduxjs/toolkit/query/react";
 
 import { Entity, EntityId, Punch, StoreEntity, Task } from './types';
-import { getPunchById, getPunches, getTasks } from "./database";
+import { getPunchById, getPunches, getTaskById, getTasks } from "./database";
 
 async function wrapReturnValue<TR>(p: Promise<TR>) {
     try {
@@ -17,17 +17,18 @@ async function wrapReturnValue<TR>(p: Promise<TR>) {
 
 type PgTagTypes = "Tasks" | "Punches" | "Projects";
 type PgBaseQuery = BaseQueryFn<string | Partial<Entity>, unknown, Error>;
-type PgEndpointDefinition<TResult, TArg=void, TTag extends string=PgTagTypes> =
+type PgEndpointDefinition<TResult, TArg = void, TTag extends string = PgTagTypes> =
     QueryDefinition<
         TArg,
         PgBaseQuery,
         TTag,
         TResult extends Array<infer U> ?
-            U extends Entity ? StoreEntity<U>[] : never :
-            NonNullable<TResult> extends Entity ? StoreEntity<NonNullable<TResult>> | Extract<TResult, undefined> : never
+        U extends Entity ? StoreEntity<U>[] : never :
+        NonNullable<TResult> extends Entity ? StoreEntity<NonNullable<TResult>> | Extract<TResult, undefined> : never
     >;
 type PgEndpoints = {
     getTasks: PgEndpointDefinition<Task[]>,
+    getTaskById: PgEndpointDefinition<Task | undefined, EntityId>,
     getPunches: PgEndpointDefinition<Punch[]>,
     getPunchById: PgEndpointDefinition<Punch | undefined, EntityId>
 }
@@ -36,16 +37,22 @@ export const pgApi = createApi<PgBaseQuery, PgEndpoints, 'perago', PgTagTypes>({
     tagTypes: ["Punches", "Tasks", "Projects"],
     reducerPath: "perago",
     baseQuery(args, api?, extra?) {
-        return Promise.resolve({data: {id:1}});
+        return Promise.resolve({ data: { id: 1 } });
     },
     endpoints: (build) => ({
-        getTasks: build.query<StoreEntity<Task>[],void>({
+        getTasks: build.query<StoreEntity<Task>[], void>({
             queryFn(_args?) {
                 return wrapReturnValue(getTasks());
             },
             providesTags: ["Tasks"]
         }),
-        getPunches: build.query<StoreEntity<Punch>[],void>({
+        getTaskById: build.query({
+            queryFn(taskId: EntityId) {
+                return wrapReturnValue(getTaskById(taskId));
+            },
+            providesTags: (_result, _error, id) => ([{ type: "Tasks", id }])
+        }),
+        getPunches: build.query<StoreEntity<Punch>[], void>({
             queryFn() {
                 return wrapReturnValue(getPunches());
             },
@@ -55,7 +62,7 @@ export const pgApi = createApi<PgBaseQuery, PgEndpoints, 'perago', PgTagTypes>({
             queryFn(punchId: EntityId) {
                 return wrapReturnValue(getPunchById(punchId));
             },
-            providesTags: (punch) => ([{type: "Punches", id: punch?.id}])
+            providesTags: (_result, _error, id) => ([{ type: "Punches", id }])
         })
     })
 })
@@ -66,5 +73,6 @@ export const {
     reducerPath,
     useGetTasksQuery,
     useGetPunchesQuery,
-    useGetPunchByIdQuery
+    useGetPunchByIdQuery,
+    useGetTaskByIdQuery
 } = pgApi;
